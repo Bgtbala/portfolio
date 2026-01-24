@@ -1,30 +1,31 @@
-import { useBox } from "@react-three/cannon";
+import { useCompoundBody } from "@react-three/cannon";
 import { useFrame, useThree } from "@react-three/fiber";
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useRef } from "react";
 import { Vector3, Quaternion } from "three";
+import * as THREE from "three";
 
 function useControls() {
-    const [controls, setControls] = useState({ forward: false, backward: false, left: false, right: false, brake: false, reset: false });
+    const controls = useRef({ forward: false, backward: false, left: false, right: false, brake: false, reset: false });
 
     useEffect(() => {
         const handleKeyDown = (e: KeyboardEvent) => {
             switch (e.key.toLowerCase()) {
-                case 'w': case 'arrowup': setControls(c => ({ ...c, forward: true })); break;
-                case 's': case 'arrowdown': setControls(c => ({ ...c, backward: true })); break;
-                case 'a': case 'arrowleft': setControls(c => ({ ...c, left: true })); break;
-                case 'd': case 'arrowright': setControls(c => ({ ...c, right: true })); break;
-                case ' ': setControls(c => ({ ...c, brake: true })); break;
-                case 'r': setControls(c => ({ ...c, reset: true })); break;
+                case 'w': case 'arrowup': controls.current.forward = true; break;
+                case 's': case 'arrowdown': controls.current.backward = true; break;
+                case 'a': case 'arrowleft': controls.current.left = true; break;
+                case 'd': case 'arrowright': controls.current.right = true; break;
+                case ' ': controls.current.brake = true; break;
+                case 'r': controls.current.reset = true; break;
             }
         };
         const handleKeyUp = (e: KeyboardEvent) => {
             switch (e.key.toLowerCase()) {
-                case 'w': case 'arrowup': setControls(c => ({ ...c, forward: false })); break;
-                case 's': case 'arrowdown': setControls(c => ({ ...c, backward: false })); break;
-                case 'a': case 'arrowleft': setControls(c => ({ ...c, left: false })); break;
-                case 'd': case 'arrowright': setControls(c => ({ ...c, right: false })); break;
-                case ' ': setControls(c => ({ ...c, brake: false })); break;
-                case 'r': setControls(c => ({ ...c, reset: false })); break;
+                case 'w': case 'arrowup': controls.current.forward = false; break;
+                case 's': case 'arrowdown': controls.current.backward = false; break;
+                case 'a': case 'arrowleft': controls.current.left = false; break;
+                case 'd': case 'arrowright': controls.current.right = false; break;
+                case ' ': controls.current.brake = false; break;
+                case 'r': controls.current.reset = false; break;
             }
         };
         window.addEventListener('keydown', handleKeyDown);
@@ -37,144 +38,214 @@ function useControls() {
     return controls;
 }
 
+const Wheel = ({ position, rotation = [Math.PI / 2, 0, Math.PI / 2] }: any) => (
+    <group position={position}>
+        {/* Tire */}
+        <mesh rotation={rotation}>
+            <cylinderGeometry args={[0.45, 0.45, 0.3, 24]} />
+            <meshStandardMaterial color="#111" roughness={0.3} metalness={0.8} />
+            {/* Rim */}
+            <mesh position={[0, 0.05, 0]}>
+                <cylinderGeometry args={[0.3, 0.35, 0.32, 12]} />
+                <meshStandardMaterial color="#666" metalness={1} roughness={0.1} />
+            </mesh>
+            {/* Glow Core */}
+            <mesh position={[0, 0.1, 0]}>
+                <cylinderGeometry args={[0.1, 0.1, 0.35, 12]} />
+                <meshStandardMaterial color="#00ff88" emissive="#00ff88" emissiveIntensity={2} />
+            </mesh>
+        </mesh>
+    </group>
+);
+
 export default function Car() {
-    const { forward, backward, left, right, brake, reset } = useControls();
+    const controlsIdx = useControls();
     const { camera } = useThree();
-    const [ref, api] = useBox(() => ({
-        mass: 1, // Reduced from 500
-        args: [2, 1, 4],
-        linearDamping: 0.1, // Reduced air resistance
-        angularDamping: 0.1,
-        angularFactor: [0, 1, 0] // Lock X and Z rotation (prevent flipping), allow Y (steering)
+
+    // Car Body Physics - HEAVY & GROUNDED
+    const [ref, api] = useCompoundBody(() => ({
+        mass: 500, // Significant weight to prevent lifting
+        position: [0, 0.95, 20], // Spawning on the start segment
+        rotation: [0, 0, 0],
+        linearDamping: 0.5,
+        angularDamping: 0.99, // High damping to stop unnecessary spinning
+        allowSleep: false,
+        fixedRotation: false,
+        angularFactor: [0, 1, 0], // LOCK X and Z rotation - NO MORE JUMPING/FLIPPING
+        shapes: [
+            { type: 'Box', args: [1.8, 0.4, 4.4], position: [0, 0.2, 0] }, // Lowered Center of Mass
+            // Traction spheres
+            { type: 'Sphere', args: [0.5], position: [-0.8, -0.35, -1.2] },
+            { type: 'Sphere', args: [0.5], position: [0.8, -0.35, -1.2] },
+            { type: 'Sphere', args: [0.5], position: [-0.8, -0.35, 1.2] },
+            { type: 'Sphere', args: [0.5], position: [0.8, -0.35, 1.2] },
+        ]
     }));
 
     const velocity = useRef([0, 0, 0]);
     useEffect(() => api.velocity.subscribe((v) => (velocity.current = v)), [api.velocity]);
-
     const quaternion = useRef([0, 0, 0, 1]);
     useEffect(() => api.quaternion.subscribe((q) => (quaternion.current = q)), [api.quaternion]);
-
     const position = useRef([0, 0, 0]);
     useEffect(() => api.position.subscribe((p) => (position.current = p)), [api.position]);
+    const steering = useRef(0);
+    const throttle = useRef(0);
 
     useFrame((state, delta) => {
-        // FORCE: Keep car parallel to ground. We manually overwrite X/Z rotation to 0.
-        // We only want Y rotation (steering) from the physics engine.
-        const currentEulerY = new Quaternion(quaternion.current[0], quaternion.current[1], quaternion.current[2], quaternion.current[3]);
-        // Extract Y rotation or just rely on physics but zero out X/Z
-        // Actually, safer to just set angularFactor (already done) AND explicit rotation fix if it drifts
-        // But the user says it is STILL flipping front.
-        // This means the torque from movement (force applied at center) acts on the body.
-        // Let's explicitly set rotation to only have Y component every frame.
-
-        // However, modifying rotation directly fights physics. 
-        // Better: Apply a "stabilizing" function or just rely on angularFactor which SHOULD have worked.
-        // If it failed, maybe the api wasn't updated. Let's try re-setting angularFactor explicitly in useFrame or effect.
-
-        // Actually, let's just use the 'fixedRotation' approach via angularFactor again but ensure it propagates.
-        // And reduce speed slightly to feel "grounded".
+        const { forward, backward, left, right, brake, reset } = controlsIdx.current;
 
         if (reset) {
-            api.position.set(0, 2, 0);
+            api.position.set(0, 0.95, 20);
             api.velocity.set(0, 0, 0);
             api.angularVelocity.set(0, 0, 0);
             api.rotation.set(0, 0, 0);
+            steering.current = 0;
+            throttle.current = 0;
             api.wakeUp();
             return;
         }
 
-        // AGGRESSIVE STABILIZATION:
-        // We only allow Y rotation (yaw/steering).
-        // To do this correctly, we subscribe to angularVelocity properly (we likely weren't).
-        // Since we can't easily get the current angular velocity synchronously without a subscription ref,
-        // and subscribing to another loose ref might be complex, we will just rely on angularFactor.
+        // --- FORCES & ACCELERATION ---
+        const driveForce = 180000; // Increased to reach higher top speed
+        const turnTorque = 120000;
 
-        // HOWEVER, to be safe, let's just NOT overwrite angularVelocity manually if we don't have the ref.
-        // The previous bug was: api.angularVelocity.set(0, velocity.current[1], 0); 
-        // velocity.current[1] is LINEAR Y velocity (jumping), not ANGULAR Y (turning).
+        // Custom Acceleration Ramp (Throttle) - Snappy delivery
+        const targetThrottle = forward ? 1 : backward ? -0.7 : 0;
+        throttle.current = THREE.MathUtils.lerp(throttle.current, targetThrottle, delta * 2.0);
 
-        // So fixing that:
-        api.angularFactor.set(0, 1, 0); // This is usually enough if physics works.
-
-        // Let's remove the manual angularVelocity set which was breaking steering.
-        // And ensure mass/force is sufficient.
-
-        // Calculate forward direction
-        const q = new Quaternion(quaternion.current[0], quaternion.current[1], quaternion.current[2], quaternion.current[3]);
-
-        // Speed Factors (Force) - Restore some power
-        const speed = 120;
-        const turnSpeed = 40;
-
-        // Movement Logic
-        if (forward) {
+        if (forward || backward || left || right) {
             api.wakeUp();
-            api.applyLocalForce([0, 0, -speed], [0, 0, 0]);
-        }
-        if (backward) {
-            api.wakeUp();
-            api.applyLocalForce([0, 0, speed * 0.5], [0, 0, 0]);
         }
 
-        // Steering (Torque)
-        if (left) {
-            api.wakeUp();
-            api.applyTorque([0, turnSpeed, 0]);
-        }
-        if (right) {
-            api.wakeUp();
-            api.applyTorque([0, -turnSpeed, 0]);
+        // Apply constant Downforce to keep it glued to the road/sand
+        api.applyLocalForce([0, -15000, 0], [0, 0, 0]);
+
+        // Smooth Power Application
+        if (Math.abs(throttle.current) > 0.01) {
+            api.applyLocalForce([0, 0, -throttle.current * driveForce], [0, 0, 0]);
         }
 
-        // Braking
+        // SMOOTH INTERPOLATED STEERING
+        const targetSteering = left ? 1 : right ? -1 : 0;
+        steering.current = THREE.MathUtils.lerp(steering.current, targetSteering, delta * 8);
+
+        // Deadzone to ensure absolute zero when not pressing keys
+        if (Math.abs(steering.current) < 0.01) {
+            steering.current = 0;
+        }
+
+        if (steering.current !== 0) {
+            api.applyTorque([0, steering.current * turnTorque, 0]);
+
+            const velocityZ = velocity.current[2];
+            const lateralForce = steering.current * Math.abs(velocityZ) * 5000;
+            api.applyLocalForce([-lateralForce, 0, 0], [0, 0, 0]);
+        }
+
+        // Brake
         if (brake) {
-            api.velocity.set(velocity.current[0] * 0.95, velocity.current[1], velocity.current[2] * 0.95);
-            api.angularVelocity.set(0, 0, 0);
+            api.velocity.set(velocity.current[0] * 0.9, velocity.current[1], velocity.current[2] * 0.9);
         }
 
-        // Camera Follow
-        // Ideally we want the camera to be behind and slightly above the car
-        const camOffset = new Vector3(0, 5, 10).applyQuaternion(q);
-        // Smooth camera transition could be done with lerp, but for now hard set to follow
-        // For smoother experience, we lerp the camera position to target position
+        // Top Speed - INCREASED more by 40% (16 -> 23)
+        const maxSpeed = 23;
+        const currentSpeedSq = velocity.current[0] ** 2 + velocity.current[2] ** 2;
+        if (currentSpeedSq > maxSpeed ** 2) {
+            const ratio = maxSpeed / Math.sqrt(currentSpeedSq);
+            api.velocity.set(velocity.current[0] * ratio, velocity.current[1], velocity.current[2] * ratio);
+        }
 
-        const targetCamPos = new Vector3(
-            position.current[0] + camOffset.x,
-            position.current[1] + camOffset.y,
-            position.current[2] + camOffset.z
-        );
-
-        camera.position.lerp(targetCamPos, delta * 2);
-        camera.lookAt(position.current[0], position.current[1], position.current[2]);
+        // Smooth Camera Follow
+        const q = new Quaternion(...quaternion.current);
+        const camOffset = new Vector3(0, 5, 12).applyQuaternion(q);
+        const targetPos = new Vector3(position.current[0] + camOffset.x, position.current[1] + camOffset.y, position.current[2] + camOffset.z);
+        camera.position.lerp(targetPos, 0.1);
+        camera.lookAt(position.current[0], position.current[1] + 1, position.current[2]);
     });
 
+    const bodyColor = "#f3f4f6"; // Premium Silver White
+
     return (
-        <mesh ref={ref as any} castShadow>
-            <boxGeometry args={[2, 1, 4]} />
-            <meshStandardMaterial color="#00ffff" roughness={0.4} metalness={0.6} />
-            {/* Visual details for the car */}
-            <mesh position={[0, 0.5, 0.5]}>
-                <boxGeometry args={[1.8, 0.8, 2]} />
-                <meshStandardMaterial color="#333" />
+        <group ref={ref as any}>
+            {/* --- PREMIUM SPORTS CAR DESIGN --- */}
+
+            {/* Base Chassis */}
+            <mesh position={[0, 0, 0]} castShadow receiveShadow>
+                <boxGeometry args={[2.0, 0.3, 4.8]} />
+                <meshStandardMaterial color={bodyColor} metalness={0.9} roughness={0.1} />
             </mesh>
-            {/* Headlights */}
-            <mesh position={[-0.6, 0, -2.01]}>
-                <planeGeometry args={[0.5, 0.3]} />
-                <meshStandardMaterial color="white" emissive="white" emissiveIntensity={5} />
+
+            {/* Aerodynamic Cockpit Glass */}
+            <mesh position={[0, 0.45, -0.2]}>
+                <boxGeometry args={[1.5, 0.7, 2.0]} />
+                <meshPhysicalMaterial color="#111" metalness={1} roughness={0} transparent opacity={0.6} transmission={0.9} thickness={2} />
             </mesh>
-            <mesh position={[0.6, 0, -2.01]}>
-                <planeGeometry args={[0.5, 0.3]} />
-                <meshStandardMaterial color="white" emissive="white" emissiveIntensity={5} />
+
+            {/* Nose Slant */}
+            <mesh position={[0, 0.1, -1.8]} rotation={[0.2, 0, 0]}>
+                <boxGeometry args={[1.95, 0.4, 1.5]} />
+                <meshStandardMaterial color={bodyColor} metalness={0.9} roughness={0.1} />
             </mesh>
-            {/* Taillights */}
-            <mesh position={[-0.6, 0, 2.01]} rotation={[0, Math.PI, 0]}>
-                <planeGeometry args={[0.5, 0.3]} />
-                <meshStandardMaterial color="red" emissive="red" emissiveIntensity={3} />
+
+            {/* Rear Slant / Engine Bay */}
+            <mesh position={[0, 0.25, 1.6]} rotation={[-0.3, 0, 0]}>
+                <boxGeometry args={[1.8, 0.5, 2.0]} />
+                <meshStandardMaterial color={bodyColor} metalness={0.9} roughness={0.1} />
             </mesh>
-            <mesh position={[0.6, 0, 2.01]} rotation={[0, Math.PI, 0]}>
-                <planeGeometry args={[0.5, 0.3]} />
-                <meshStandardMaterial color="red" emissive="red" emissiveIntensity={3} />
+
+            {/* Carbon Fiber Side Insets */}
+            <mesh position={[1, 0.1, 0]}>
+                <boxGeometry args={[0.05, 0.5, 3.5]} />
+                <meshStandardMaterial color="#222" roughness={0.8} />
             </mesh>
-        </mesh>
+            <mesh position={[-1, 0.1, 0]}>
+                <boxGeometry args={[0.05, 0.5, 3.5]} />
+                <meshStandardMaterial color="#222" roughness={0.8} />
+            </mesh>
+
+            {/* Headlights (Laser Strips) */}
+            <mesh position={[-0.7, 0.1, -2.4]}>
+                <boxGeometry args={[0.5, 0.05, 0.05]} />
+                <meshStandardMaterial color="#00f2ff" emissive="#00f2ff" emissiveIntensity={5} />
+            </mesh>
+            <mesh position={[0.7, 0.1, -2.4]}>
+                <boxGeometry args={[0.5, 0.05, 0.05]} />
+                <meshStandardMaterial color="#00f2ff" emissive="#00f2ff" emissiveIntensity={5} />
+            </mesh>
+
+            {/* Tail Light Bar */}
+            <mesh position={[0, 0.3, 2.41]}>
+                <boxGeometry args={[1.9, 0.1, 0.05]} />
+                <meshStandardMaterial color="red" emissive="red" emissiveIntensity={5} />
+            </mesh>
+
+            {/* Neon Underglow */}
+            <mesh position={[0, -0.15, 0]}>
+                <boxGeometry args={[1.6, 0.05, 3.5]} />
+                <meshStandardMaterial color="#00ff88" emissive="#00ff88" emissiveIntensity={4} transparent opacity={0.5} />
+            </mesh>
+
+            {/* Spoiler Wing */}
+            <group position={[0, 0.7, 2.2]}>
+                <mesh>
+                    <boxGeometry args={[2.2, 0.05, 0.8]} />
+                    <meshStandardMaterial color="#222" metalness={0.8} />
+                </mesh>
+                <mesh position={[0.9, -0.3, 0]}>
+                    <boxGeometry args={[0.05, 0.6, 0.2]} />
+                    <meshStandardMaterial color={bodyColor} />
+                </mesh>
+                <mesh position={[-0.9, -0.3, 0]}>
+                    <boxGeometry args={[0.05, 0.6, 0.2]} />
+                    <meshStandardMaterial color={bodyColor} />
+                </mesh>
+            </group>
+
+            {/* Visual Wheels */}
+            <Wheel position={[-1, -0.3, -1.4]} />
+            <Wheel position={[1, -0.3, -1.4]} />
+            <Wheel position={[-1, -0.3, 1.4]} />
+            <Wheel position={[1, -0.3, 1.4]} />
+        </group>
     );
 }
