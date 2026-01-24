@@ -5,8 +5,11 @@ import { useState, useEffect } from 'react';
 import { FiArrowUp, FiDownload } from 'react-icons/fi';
 import { useTheme } from '../context/ThemeContext';
 
+import { usePathname } from 'next/navigation';
+
 export default function FloatingActions() {
     const { theme } = useTheme();
+    const pathname = usePathname();
     const [showBackToTop, setShowBackToTop] = useState(false);
 
     useEffect(() => {
@@ -20,6 +23,9 @@ export default function FloatingActions() {
     const scrollToTop = () => {
         window.scrollTo({ top: 0, behavior: 'smooth' });
     };
+
+    // Hide on game page
+    if (pathname === '/game') return null;
 
     const isClassic = theme === 'classic';
     const isAnimated = theme === 'animated';
@@ -39,10 +45,10 @@ export default function FloatingActions() {
                 whileHover={{ scale: 1.1 }}
                 whileTap={{ scale: 0.95 }}
                 className={`w-14 h-14 rounded-full flex items-center justify-center transition-all group ${isClassic
-                        ? 'bg-black text-white hover:bg-gray-800'
-                        : isAnimated
-                            ? 'bg-[#ff007f] text-white border-4 border-black shadow-[4px_4px_0px_#000] hover:shadow-none hover:translate-x-1 hover:translate-y-1'
-                            : 'bg-primary text-black hover:shadow-[0_0_30px_rgba(0,242,255,0.5)]'
+                    ? 'bg-black text-white hover:bg-gray-800'
+                    : isAnimated
+                        ? 'bg-[#ff007f] text-white border-4 border-black shadow-[4px_4px_0px_#000] hover:shadow-none hover:translate-x-1 hover:translate-y-1'
+                        : 'bg-primary text-black hover:shadow-[0_0_30px_rgba(0,242,255,0.5)]'
                     }`}
                 title="Download Resume"
             >
@@ -60,10 +66,10 @@ export default function FloatingActions() {
                         whileTap={{ scale: 0.95 }}
                         onClick={scrollToTop}
                         className={`w-14 h-14 rounded-full flex items-center justify-center transition-all ${isClassic
-                                ? 'bg-white text-black border border-gray-200 hover:bg-gray-50'
-                                : isAnimated
-                                    ? 'bg-[#00f2ff] text-black border-4 border-black shadow-[4px_4px_0px_#000] hover:shadow-none hover:translate-x-1 hover:translate-y-1'
-                                    : 'bg-white/10 text-white border border-white/20 hover:bg-white/20 hover:border-primary'
+                            ? 'bg-white text-black border border-gray-200 hover:bg-gray-50'
+                            : isAnimated
+                                ? 'bg-[#00f2ff] text-black border-4 border-black shadow-[4px_4px_0px_#000] hover:shadow-none hover:translate-x-1 hover:translate-y-1'
+                                : 'bg-white/10 text-white border border-white/20 hover:bg-white/20 hover:border-primary'
                             }`}
                         title="Back to Top"
                     >

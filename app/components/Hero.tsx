@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import { motion } from 'framer-motion';
 import { useRef } from 'react';
 import { FiGithub, FiLinkedin, FiArrowRight, FiCpu, FiGlobe, FiShield, FiTerminal, FiZap, FiActivity, FiLayers } from 'react-icons/fi';
@@ -65,6 +66,11 @@ function FutureHero() {
                                         Initialize_Projects <FiArrowRight />
                                     </span>
                                 </a>
+                                <Link href="/game" className="group relative px-10 py-5 bg-transparent border border-primary/50 overflow-hidden hover:bg-primary/10 transition-all">
+                                    <span className="relative z-10 font-mono text-primary font-black uppercase tracking-[0.2em] flex items-center gap-4 transition-transform group-hover:translate-x-2">
+                                        Launch_Sim 🎮
+                                    </span>
+                                </Link>
                             </div>
                         </motion.div>
                     </div>
@@ -146,6 +152,12 @@ function ClassicHero() {
                                 <FiArrowRight size={20} />
                             </div>
                         </a>
+                        <Link href="/game" className="group inline-flex items-center gap-8 border-t border-black pt-6 transition-all hover:opacity-50 ml-8">
+                            <span className="text-lg theme-title italic tracking-tight">Play 3D 🕹️</span>
+                            <div className="w-12 h-12 rounded-full border border-gray-200 flex items-center justify-center group-hover:translate-x-2 transition-transform">
+                                <FiArrowRight size={20} />
+                            </div>
+                        </Link>
                     </motion.div>
                 </div>
 
@@ -225,13 +237,21 @@ function AnimatedHero() {
                                 >
                                     Start Quest! <FiZap />
                                 </a>
+                                <Link
+                                    href="/game"
+                                    onMouseEnter={playHover}
+                                    onClick={playClick}
+                                    className="bg-[#00f2ff] text-black px-10 py-6 font-black text-2xl shadow-[8px_8px_0px_#000] hover:translate-x-[4px] hover:translate-y-[4px] hover:shadow-none transition-all active:scale-95 uppercase border-4 border-black inline-block flex items-center gap-4"
+                                >
+                                    3D Drive 🚗
+                                </Link>
                                 <div className="flex gap-4">
                                     <a
                                         href="https://github.com/Bgtbala"
                                         target="_blank"
                                         onMouseEnter={playHover}
                                         onClick={playClick}
-                                        className="w-16 h-16 bg-[#00f2ff] border-4 border-black flex items-center justify-center text-black shadow-[5px_5px_0px_#000] hover:rotate-6 transition-transform cursor-pointer"
+                                        className="w-16 h-16 bg-white border-4 border-black flex items-center justify-center text-black shadow-[5px_5px_0px_#000] hover:rotate-6 transition-transform cursor-pointer"
                                     >
                                         <FiGithub size={32} />
                                     </a>
