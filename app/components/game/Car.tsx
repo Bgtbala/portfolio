@@ -5,7 +5,7 @@ import { Vector3, Quaternion } from "three";
 import * as THREE from "three";
 
 function useControls() {
-    const controls = useRef({ forward: false, backward: false, left: false, right: false, brake: false, reset: false });
+    const controls = useRef({ forward: false, backward: false, left: false, right: false, brake: false, reset: false, nitro: false });
 
     useEffect(() => {
         const handleKeyDown = (e: KeyboardEvent) => {
@@ -16,6 +16,7 @@ function useControls() {
                 case 'd': case 'arrowright': controls.current.right = true; break;
                 case ' ': controls.current.brake = true; break;
                 case 'r': controls.current.reset = true; break;
+                case 'shift': controls.current.nitro = true; break;
             }
         };
         const handleKeyUp = (e: KeyboardEvent) => {
@@ -26,6 +27,7 @@ function useControls() {
                 case 'd': case 'arrowright': controls.current.right = false; break;
                 case ' ': controls.current.brake = false; break;
                 case 'r': controls.current.reset = false; break;
+                case 'shift': controls.current.nitro = false; break;
             }
         };
         window.addEventListener('keydown', handleKeyDown);
@@ -37,6 +39,7 @@ function useControls() {
     }, []);
     return controls;
 }
+
 
 const Wheel = ({ position, rotation = [Math.PI / 2, 0, Math.PI / 2] }: any) => (
     <group position={position}>
@@ -58,27 +61,30 @@ const Wheel = ({ position, rotation = [Math.PI / 2, 0, Math.PI / 2] }: any) => (
     </group>
 );
 
+import { useGameStore } from "./GameState";
+
 export default function Car() {
     const controlsIdx = useControls();
     const { camera } = useThree();
+    const { setSpeed, setNitro, nitroActive, addDriftPoints, setCarPosition } = useGameStore();
 
-    // Car Body Physics - HEAVY & GROUNDED
+    // Car Body Physics - MAXIMUM BUTTERINESS 
     const [ref, api] = useCompoundBody(() => ({
-        mass: 500, // Significant weight to prevent lifting
-        position: [0, 0.95, 20], // Spawning on the start segment
+        mass: 500,
+        position: [0, 0.95, 20],
         rotation: [0, 0, 0],
-        linearDamping: 0.5,
-        angularDamping: 0.99, // High damping to stop unnecessary spinning
+        linearDamping: 0.0, // ZERO air resistance for buttery smoothness
+        angularDamping: 0.9,
         allowSleep: false,
         fixedRotation: false,
-        angularFactor: [0, 1, 0], // LOCK X and Z rotation - NO MORE JUMPING/FLIPPING
+        angularFactor: [0, 1, 0],
         shapes: [
-            { type: 'Box', args: [1.8, 0.4, 4.4], position: [0, 0.2, 0] }, // Lowered Center of Mass
-            // Traction spheres
-            { type: 'Sphere', args: [0.5], position: [-0.8, -0.35, -1.2] },
-            { type: 'Sphere', args: [0.5], position: [0.8, -0.35, -1.2] },
-            { type: 'Sphere', args: [0.5], position: [-0.8, -0.35, 1.2] },
-            { type: 'Sphere', args: [0.5], position: [0.8, -0.35, 1.2] },
+            { type: 'Box', args: [1.8, 0.6, 4.4], position: [0, 0.2, 0] },
+            // Slightly smaller wheels to avoid catching seams
+            { type: 'Sphere', args: [0.45], position: [-0.8, -0.3, -1.2] },
+            { type: 'Sphere', args: [0.45], position: [0.8, -0.3, -1.2] },
+            { type: 'Sphere', args: [0.45], position: [-0.8, -0.3, 1.2] },
+            { type: 'Sphere', args: [0.45], position: [0.8, -0.3, 1.2] },
         ]
     }));
 
@@ -90,9 +96,11 @@ export default function Car() {
     useEffect(() => api.position.subscribe((p) => (position.current = p)), [api.position]);
     const steering = useRef(0);
     const throttle = useRef(0);
+    const driftAccumulator = useRef(0);
+    const lastUpdate = useRef(0);
 
     useFrame((state, delta) => {
-        const { forward, backward, left, right, brake, reset } = controlsIdx.current;
+        const { forward, backward, left, right, brake, reset, nitro } = controlsIdx.current;
 
         if (reset) {
             api.position.set(0, 0.95, 20);
@@ -106,19 +114,46 @@ export default function Car() {
         }
 
         // --- FORCES & ACCELERATION ---
-        const driveForce = 180000; // Increased to reach higher top speed
+        const nitroMult = (nitro && forward || nitroActive) ? 1.8 : 1.0;
+        const driveForce = 120000 * nitroMult; // Increased base force
         const turnTorque = 120000;
 
-        // Custom Acceleration Ramp (Throttle) - Snappy delivery
-        const targetThrottle = forward ? 1 : backward ? -0.7 : 0;
-        throttle.current = THREE.MathUtils.lerp(throttle.current, targetThrottle, delta * 2.0);
+        // Update Game State - Throttled to 10fps for ultimate stability
+        const currentSpeed = Math.sqrt(velocity.current[0] ** 2 + velocity.current[2] ** 2);
+        if (state.clock.elapsedTime - lastUpdate.current > 0.1) {
+            setSpeed(currentSpeed);
+            setCarPosition(position.current as [number, number, number]);
+            if (nitroActive !== (nitro && forward) && !nitroActive) setNitro(nitro && forward);
+            lastUpdate.current = state.clock.elapsedTime;
+        }
+
+        // --- DRIFT SCORING ---
+        if (currentSpeed > 5) {
+            const vDir = new THREE.Vector3(velocity.current[0], 0, velocity.current[2]).normalize();
+            const carDir = new THREE.Vector3(0, 0, -1).applyQuaternion(new THREE.Quaternion(...quaternion.current));
+            const angle = Math.abs(vDir.dot(carDir));
+
+            if (angle < 0.85) { // Sideways enough
+                driftAccumulator.current += delta * currentSpeed * 10;
+                if (driftAccumulator.current > 10) {
+                    addDriftPoints(Math.floor(driftAccumulator.current));
+                    driftAccumulator.current = 0;
+                }
+            } else {
+                driftAccumulator.current = 0;
+            }
+        }
+
+        // Custom Acceleration Ramp - INCREASED responsiveness
+        const targetThrottle = forward ? 1 : backward ? -1 : 0;
+        throttle.current = THREE.MathUtils.lerp(throttle.current, targetThrottle, delta * 4.0);
 
         if (forward || backward || left || right) {
             api.wakeUp();
         }
 
-        // Apply constant Downforce to keep it glued to the road/sand
-        api.applyLocalForce([0, -15000, 0], [0, 0, 0]);
+        // Increased Downforce for "Glue" feel
+        api.applyLocalForce([0, -20000, 0], [0, 0, 0]);
 
         // Smooth Power Application
         if (Math.abs(throttle.current) > 0.01) {
@@ -147,8 +182,8 @@ export default function Car() {
             api.velocity.set(velocity.current[0] * 0.9, velocity.current[1], velocity.current[2] * 0.9);
         }
 
-        // Top Speed - INCREASED more by 40% (16 -> 23)
-        const maxSpeed = 23;
+        // Dynamically adjust Top Speed
+        const maxSpeed = 23 * nitroMult;
         const currentSpeedSq = velocity.current[0] ** 2 + velocity.current[2] ** 2;
         if (currentSpeedSq > maxSpeed ** 2) {
             const ratio = maxSpeed / Math.sqrt(currentSpeedSq);
@@ -161,6 +196,14 @@ export default function Car() {
         const targetPos = new Vector3(position.current[0] + camOffset.x, position.current[1] + camOffset.y, position.current[2] + camOffset.z);
         camera.position.lerp(targetPos, 0.1);
         camera.lookAt(position.current[0], position.current[1] + 1, position.current[2]);
+
+        // Speed FOV scaling - REDUCED effect for stability
+        const pCam = camera as THREE.PerspectiveCamera;
+        if (pCam.isPerspectiveCamera) {
+            // Reduced multiplier from 1.2 to 0.4
+            pCam.fov = THREE.MathUtils.lerp(pCam.fov, 60 + (currentSpeed * 0.4), 0.1);
+            pCam.updateProjectionMatrix();
+        }
     });
 
     const bodyColor = "#f3f4f6"; // Premium Silver White
