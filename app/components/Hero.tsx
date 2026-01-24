@@ -4,6 +4,7 @@ import { motion } from 'framer-motion';
 import { useRef } from 'react';
 import { FiGithub, FiLinkedin, FiArrowRight, FiCpu, FiGlobe, FiShield, FiTerminal, FiZap, FiActivity, FiLayers } from 'react-icons/fi';
 import { useTheme } from '../context/ThemeContext';
+import { useSoundEffects } from './SoundEffects';
 
 export default function Hero() {
     const { theme } = useTheme();
@@ -175,6 +176,8 @@ function ClassicHero() {
 
 // --- Animated Theme Layout (Maximum Neobrutalist Impact) ---
 function AnimatedHero() {
+    const { playClick, playHover } = useSoundEffects();
+
     return (
         <section id="home" className="min-h-screen flex items-center justify-center relative overflow-hidden bg-[#ffea00] p-6 lg:p-20">
             <div className="absolute inset-0 pointer-events-none">
@@ -197,9 +200,13 @@ function AnimatedHero() {
                         transition={{ type: "spring", stiffness: 100 }}
                         className="space-y-12"
                     >
-                        <div className="bg-black text-white px-8 py-4 border-4 border-black shadow-[8px_8px_0px_#ff007f] w-fit transform -rotate-1">
+                        <motion.div
+                            whileHover={{ scale: 1.05, rotate: 2 }}
+                            onMouseEnter={playHover}
+                            className="bg-black text-white px-8 py-4 border-4 border-black shadow-[8px_8px_0px_#ff007f] w-fit transform -rotate-1 cursor-default"
+                        >
                             <h2 className="text-2xl font-black theme-title italic uppercase tracking-tighter">BGT_BALA_v2.0</h2>
-                        </div>
+                        </motion.div>
 
                         <h1 className="text-7xl md:text-[11vw] font-black text-black leading-[0.8] tracking-tighter uppercase italic text-black">
                             FULL STACK<br /><span className="text-[#ff007f]">OVERPOWERED.</span>
@@ -210,11 +217,22 @@ function AnimatedHero() {
                                 "Slaying bugs since 2024!"
                             </p>
                             <div className="flex flex-wrap gap-6">
-                                <a href="#projects" className="bg-[#ff007f] text-white px-10 py-6 font-black text-2xl shadow-[8px_8px_0px_#000] hover:translate-x-[4px] hover:translate-y-[4px] hover:shadow-none transition-all active:scale-95 uppercase border-4 border-black inline-block flex items-center gap-4">
+                                <a
+                                    href="#projects"
+                                    onMouseEnter={playHover}
+                                    onClick={playClick}
+                                    className="bg-[#ff007f] text-white px-10 py-6 font-black text-2xl shadow-[8px_8px_0px_#000] hover:translate-x-[4px] hover:translate-y-[4px] hover:shadow-none transition-all active:scale-95 uppercase border-4 border-black inline-block flex items-center gap-4"
+                                >
                                     Start Quest! <FiZap />
                                 </a>
                                 <div className="flex gap-4">
-                                    <a href="https://github.com/Bgtbala" target="_blank" className="w-16 h-16 bg-[#00f2ff] border-4 border-black flex items-center justify-center text-black shadow-[5px_5px_0px_#000] hover:rotate-6 transition-transform cursor-pointer">
+                                    <a
+                                        href="https://github.com/Bgtbala"
+                                        target="_blank"
+                                        onMouseEnter={playHover}
+                                        onClick={playClick}
+                                        className="w-16 h-16 bg-[#00f2ff] border-4 border-black flex items-center justify-center text-black shadow-[5px_5px_0px_#000] hover:rotate-6 transition-transform cursor-pointer"
+                                    >
                                         <FiGithub size={32} />
                                     </a>
                                 </div>
@@ -230,10 +248,10 @@ function AnimatedHero() {
                         className="w-full aspect-square bg-white border-[12px] border-black shadow-[40px_40px_0px_#ff007f] relative flex items-center justify-center"
                     >
                         <div className="grid grid-cols-2 gap-4 p-8 w-full h-full text-9xl">
-                            <div className="bg-yellow-400 border-[6px] border-black flex items-center justify-center">🔥</div>
-                            <div className="bg-[#00f2ff] border-[6px] border-black flex items-center justify-center">💎</div>
-                            <div className="bg-black text-white border-[6px] border-black flex items-center justify-center">🚀</div>
-                            <div className="bg-[#ff007f] border-[6px] border-black flex items-center justify-center">✨</div>
+                            <motion.div whileHover={{ scale: 1.1 }} onMouseEnter={playHover} className="bg-yellow-400 border-[6px] border-black flex items-center justify-center">🔥</motion.div>
+                            <motion.div whileHover={{ scale: 1.1 }} onMouseEnter={playHover} className="bg-[#00f2ff] border-[6px] border-black flex items-center justify-center">💎</motion.div>
+                            <motion.div whileHover={{ scale: 1.1 }} onMouseEnter={playHover} className="bg-black text-white border-[6px] border-black flex items-center justify-center">🚀</motion.div>
+                            <motion.div whileHover={{ scale: 1.1 }} onMouseEnter={playHover} className="bg-[#ff007f] border-[6px] border-black flex items-center justify-center">✨</motion.div>
                         </div>
                     </motion.div>
                 </div>
@@ -241,3 +259,4 @@ function AnimatedHero() {
         </section>
     );
 }
+
