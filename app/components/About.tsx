@@ -7,7 +7,7 @@ import { useTheme } from '../context/ThemeContext';
 // Animation variants
 const fadeInUp = {
     hidden: { opacity: 0, y: 30 },
-    visible: { opacity: 1, y: 0, transition: { duration: 0.6, ease: "easeOut" } }
+    visible: { opacity: 1, y: 0, transition: { duration: 0.6 } }
 };
 
 const staggerContainer = {
@@ -24,7 +24,7 @@ const staggerItem = {
         opacity: 1,
         y: 0,
         scale: 1,
-        transition: { duration: 0.4, ease: "easeOut" }
+        transition: { duration: 0.4 }
     }
 };
 
