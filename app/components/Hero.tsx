@@ -233,7 +233,7 @@ function AnimatedHero() {
                                     href="#projects"
                                     onMouseEnter={playHover}
                                     onClick={playClick}
-                                    className="bg-[#ff007f] text-white px-10 py-6 font-black text-2xl shadow-[8px_8px_0px_#000] hover:translate-x-[4px] hover:translate-y-[4px] hover:shadow-none transition-all active:scale-95 uppercase border-4 border-black inline-block flex items-center gap-4"
+                                    className="bg-[#ff007f] text-white px-10 py-6 font-black text-2xl shadow-[8px_8px_0px_#000] hover:translate-x-[4px] hover:translate-y-[4px] hover:shadow-none transition-all active:scale-95 uppercase border-4 border-black inline-flex items-center gap-4 whitespace-nowrap"
                                 >
                                     Start Quest! <FiZap />
                                 </a>

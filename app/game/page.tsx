@@ -35,56 +35,67 @@ export default function GamePage() {
             </div>
 
             {/* Mobile Controls */}
-            <div className="absolute bottom-10 w-full px-6 z-20 flex justify-between md:hidden pointer-events-none">
-                {/* Steering */}
-                <div className="flex gap-4 pointer-events-auto">
+            <div className="absolute bottom-6 w-full px-4 z-20 flex justify-between md:hidden pointer-events-none">
+                {/* Steering & Nitro */}
+                <div className="flex flex-col gap-4 pointer-events-auto">
                     <button
-                        className="w-16 h-16 bg-white/20 backdrop-blur-md rounded-full flex items-center justify-center text-white active:bg-white/40 transition-all border-2 border-white/30"
-                        onPointerDown={() => window.dispatchEvent(new KeyboardEvent('keydown', { key: 'a' }))}
-                        onPointerUp={() => window.dispatchEvent(new KeyboardEvent('keyup', { key: 'a' }))}
-                        onPointerLeave={() => window.dispatchEvent(new KeyboardEvent('keyup', { key: 'a' }))}
+                        className="w-14 h-14 bg-cyan-500/40 backdrop-blur-md rounded-full flex items-center justify-center text-white active:bg-cyan-500/80 transition-all border-2 border-white/30 text-[10px] font-black"
+                        onPointerDown={() => window.dispatchEvent(new KeyboardEvent('keydown', { key: 'Shift' }))}
+                        onPointerUp={() => window.dispatchEvent(new KeyboardEvent('keyup', { key: 'Shift' }))}
+                        onPointerLeave={() => window.dispatchEvent(new KeyboardEvent('keyup', { key: 'Shift' }))}
                     >
-                        ⬅️
+                        NITRO
                     </button>
-                    <button
-                        className="w-16 h-16 bg-white/20 backdrop-blur-md rounded-full flex items-center justify-center text-white active:bg-white/40 transition-all border-2 border-white/30"
-                        onPointerDown={() => window.dispatchEvent(new KeyboardEvent('keydown', { key: 'd' }))}
-                        onPointerUp={() => window.dispatchEvent(new KeyboardEvent('keyup', { key: 'd' }))}
-                        onPointerLeave={() => window.dispatchEvent(new KeyboardEvent('keyup', { key: 'd' }))}
-                    >
-                        ➡️
-                    </button>
+                    <div className="flex gap-2">
+                        <button
+                            className="w-16 h-16 bg-white/10 backdrop-blur-md rounded-full flex items-center justify-center text-white active:bg-white/30 transition-all border-2 border-white/20 text-2xl"
+                            onPointerDown={() => window.dispatchEvent(new KeyboardEvent('keydown', { key: 'a' }))}
+                            onPointerUp={() => window.dispatchEvent(new KeyboardEvent('keyup', { key: 'a' }))}
+                            onPointerLeave={() => window.dispatchEvent(new KeyboardEvent('keyup', { key: 'a' }))}
+                        >
+                            ←
+                        </button>
+                        <button
+                            className="w-16 h-16 bg-white/10 backdrop-blur-md rounded-full flex items-center justify-center text-white active:bg-white/30 transition-all border-2 border-white/20 text-2xl"
+                            onPointerDown={() => window.dispatchEvent(new KeyboardEvent('keydown', { key: 'd' }))}
+                            onPointerUp={() => window.dispatchEvent(new KeyboardEvent('keyup', { key: 'd' }))}
+                            onPointerLeave={() => window.dispatchEvent(new KeyboardEvent('keyup', { key: 'd' }))}
+                        >
+                            →
+                        </button>
+                    </div>
                 </div>
 
-                {/* Pedals */}
-                <div className="flex flex-col gap-4 pointer-events-auto items-center">
+                {/* Pedals & Reset */}
+                <div className="flex flex-col gap-4 pointer-events-auto items-end">
                     <button
-                        className="w-12 h-12 bg-red-500/50 backdrop-blur-md rounded-full flex items-center justify-center text-white active:bg-red-500/80 transition-all border-2 border-white/30 text-xs font-bold"
+                        className="w-12 h-12 bg-red-500/30 backdrop-blur-md rounded-full flex items-center justify-center text-white active:bg-red-500/60 transition-all border-2 border-white/20 text-[8px] font-bold"
                         onPointerDown={() => window.dispatchEvent(new KeyboardEvent('keydown', { key: 'r' }))}
                         onPointerUp={() => window.dispatchEvent(new KeyboardEvent('keyup', { key: 'r' }))}
                     >
                         RESET
                     </button>
-                    <div className="flex gap-4">
+                    <div className="flex gap-2">
                         <button
-                            className="w-16 h-16 bg-white/20 backdrop-blur-md rounded-full flex items-center justify-center text-white active:bg-white/40 transition-all border-2 border-white/30"
+                            className="w-16 h-16 bg-white/10 backdrop-blur-md rounded-full flex items-center justify-center text-white active:bg-white/30 transition-all border-2 border-white/20 text-2xl"
                             onPointerDown={() => window.dispatchEvent(new KeyboardEvent('keydown', { key: 's' }))}
                             onPointerUp={() => window.dispatchEvent(new KeyboardEvent('keyup', { key: 's' }))}
                             onPointerLeave={() => window.dispatchEvent(new KeyboardEvent('keyup', { key: 's' }))}
                         >
-                            ⬇️
+                            ↓
                         </button>
                         <button
-                            className="w-16 h-16 bg-blue-500/50 backdrop-blur-md rounded-full flex items-center justify-center text-white active:bg-blue-500/80 transition-all border-2 border-white/30"
+                            className="w-16 h-16 bg-blue-500/30 backdrop-blur-md rounded-full flex items-center justify-center text-white active:bg-blue-500/60 transition-all border-2 border-white/20 text-2xl"
                             onPointerDown={() => window.dispatchEvent(new KeyboardEvent('keydown', { key: 'w' }))}
                             onPointerUp={() => window.dispatchEvent(new KeyboardEvent('keyup', { key: 'w' }))}
                             onPointerLeave={() => window.dispatchEvent(new KeyboardEvent('keyup', { key: 'w' }))}
                         >
-                            ⬆️
+                            ↑
                         </button>
                     </div>
                 </div>
             </div>
+
 
             {/* 3D Scene */}
             <Scene />
