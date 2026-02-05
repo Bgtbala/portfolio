@@ -68,23 +68,27 @@ export default function Car() {
     const { camera } = useThree();
     const { setSpeed, setNitro, nitroActive, addDriftPoints, setCarPosition } = useGameStore();
 
-    // Car Body Physics - MAXIMUM BUTTERINESS 
+    // Car Body Physics - Bruno Simon-style smooth physics
     const [ref, api] = useCompoundBody(() => ({
-        mass: 500,
+        mass: 150, // Lighter for more responsive, arcade-like feel
         position: [0, 0.95, 20],
         rotation: [0, 0, 0],
-        linearDamping: 0.02, // Very low for ultra-smooth movement
-        angularDamping: 0.9,
+        linearDamping: 0.3, // Higher for more controlled movement
+        angularDamping: 0.8, // Slightly lower for smoother rotation
         allowSleep: false,
         fixedRotation: false,
         angularFactor: [0, 1, 0],
+        material: {
+            friction: 0.3,
+            restitution: 0.1, // Low bounce
+        },
         shapes: [
             { type: 'Box', args: [1.8, 0.6, 4.4], position: [0, 0.2, 0] },
-            // Slightly smaller wheels to avoid catching seams
-            { type: 'Sphere', args: [0.45], position: [-0.8, -0.3, -1.2] },
-            { type: 'Sphere', args: [0.45], position: [0.8, -0.3, -1.2] },
-            { type: 'Sphere', args: [0.45], position: [-0.8, -0.3, 1.2] },
-            { type: 'Sphere', args: [0.45], position: [0.8, -0.3, 1.2] },
+            // Wheel spheres for smooth ground contact
+            { type: 'Sphere', args: [0.4], position: [-0.8, -0.3, -1.2] },
+            { type: 'Sphere', args: [0.4], position: [0.8, -0.3, -1.2] },
+            { type: 'Sphere', args: [0.4], position: [-0.8, -0.3, 1.2] },
+            { type: 'Sphere', args: [0.4], position: [0.8, -0.3, 1.2] },
         ]
     }));
 
@@ -113,10 +117,10 @@ export default function Car() {
             return;
         }
 
-        // --- FORCES & ACCELERATION ---
-        const nitroMult = (nitro && forward || nitroActive) ? 1.4 : 1.0;
-        const driveForce = 100000 * nitroMult; // Increased for smoother power delivery
-        const turnTorque = 50000; // Reduced for smoother, more gradual turning
+        // --- FORCES & ACCELERATION - Bruno Simon style ---
+        const nitroMult = (nitro && forward || nitroActive) ? 1.6 : 1.0;
+        const driveForce = 25000 * nitroMult; // Lighter car needs less force
+        const turnTorque = 15000; // Proportional to lighter mass
 
         // Update Game State - Smooth updates for HUD
         const currentSpeed = Math.sqrt(velocity.current[0] ** 2 + velocity.current[2] ** 2);
@@ -148,26 +152,30 @@ export default function Car() {
             }
         }
 
-        // Custom Acceleration Ramp - Fast and smooth for fluid movement
+        // Custom Acceleration Ramp - Responsive but smooth
         const targetThrottle = forward ? 1 : backward ? -1 : 0;
-        throttle.current = THREE.MathUtils.lerp(throttle.current, targetThrottle, delta * 6.0); // Increased for smoother response
+        // Much faster response for immediate input feedback
+        const throttleLerpSpeed = 15.0; // Increased from 8.0 for instant response
+        throttle.current = THREE.MathUtils.lerp(throttle.current, targetThrottle, Math.min(delta * throttleLerpSpeed, 1));
 
         if (forward || backward || left || right) {
             api.wakeUp();
         }
 
-        // Increased Downforce for "Glue" feel
-        api.applyLocalForce([0, -20000, 0], [0, 0, 0]);
+        // Downforce - proportional to speed like real aerodynamics
+        const downforce = -800 * (1 + currentSpeed * 0.1); // Scales with speed
+        api.applyLocalForce([0, downforce, 0], [0, 0, 0]);
 
         // Smooth Power Application
         if (Math.abs(throttle.current) > 0.01) {
             api.applyLocalForce([0, 0, -throttle.current * driveForce], [0, 0, 0]);
         }
 
-        // SMOOTH INTERPOLATED STEERING - Gradual for realistic feel
+        // RESPONSIVE STEERING - Immediate at low speed, smooth at high speed
         const targetSteering = left ? 1 : right ? -1 : 0;
-        const steeringSpeed = currentSpeed > 15 ? 2.5 : 4; // Much slower at high speeds
-        steering.current = THREE.MathUtils.lerp(steering.current, targetSteering, delta * steeringSpeed);
+        // Much faster steering response for better control
+        const steeringSpeed = currentSpeed > 25 ? 8.0 : currentSpeed > 15 ? 12.0 : 20.0;
+        steering.current = THREE.MathUtils.lerp(steering.current, targetSteering, Math.min(delta * steeringSpeed, 1));
 
         // Deadzone
         if (Math.abs(steering.current) < 0.01) {
@@ -175,64 +183,76 @@ export default function Car() {
         }
 
         if (steering.current !== 0) {
-            // Apply torque for rotation - progressive scaling
-            const torqueMultiplier = currentSpeed > 25 ? 0.3 : currentSpeed > 15 ? 0.5 : 1.0;
+            // Apply torque for rotation - Bruno Simon-style progressive scaling
+            const speedFactor = Math.min(currentSpeed / 30, 1.0);
+            const torqueMultiplier = 0.5 + speedFactor * 0.5; // 0.5 to 1.0 range
             api.applyTorque([0, steering.current * turnTorque * torqueMultiplier, 0]);
 
-            // Lateral grip - helps the car actually turn rather than just rotating
-            const velocityZ = velocity.current[2];
-            const velocityX = velocity.current[0];
-
-            // Calculate a more realistic lateral force
-            const forwardDir = new THREE.Vector3(0, 0, -1).applyQuaternion(new THREE.Quaternion(...quaternion.current));
+            // Lateral grip simulation - realistic tire physics
             const lateralDir = new THREE.Vector3(1, 0, 0).applyQuaternion(new THREE.Quaternion(...quaternion.current));
+            const velocityVec = new THREE.Vector3(velocity.current[0], 0, velocity.current[2]);
+            const dotLateral = velocityVec.dot(lateralDir);
 
-            const dotLateral = new THREE.Vector3(velocity.current[0], 0, velocity.current[2]).dot(lateralDir);
-
-            // Counter-act lateral velocity to simulate tire grip - reduced strength
-            if (Math.abs(dotLateral) > 0.1) {
-                api.applyLocalForce([-dotLateral * 3000, 0, 0], [0, 0, 0]); // Reduced from 5000
+            // Counter lateral slip - progressive grip
+            const gripStrength = 2000 + currentSpeed * 50; // Increases with speed
+            if (Math.abs(dotLateral) > 0.05) {
+                api.applyLocalForce([-dotLateral * gripStrength, 0, 0], [0, 0, 0]);
             }
 
-            // Add extra push into the turn - reduced for less sharp turns
-            const turnPush = steering.current * currentSpeed * 800; // Reduced from 2000
-            api.applyLocalForce([-turnPush, 0, 0], [0, 0, 0]);
+            // Turning force - helps the car follow the turn direction
+            const turnForce = steering.current * currentSpeed * 400;
+            api.applyLocalForce([-turnForce, 0, 0], [0, 0, 0]);
         }
 
-        // Brake - Smooth application for better drift control
+        // Brake - Progressive braking like real cars
         if (brake) {
-            const brakeStrength = 0.97; // Gentler for smoother drifts
+            const brakeStrength = 0.96; // Smooth progressive braking
             api.velocity.set(
                 velocity.current[0] * brakeStrength,
                 velocity.current[1],
                 velocity.current[2] * brakeStrength
             );
-            // Only dampen rotation slightly during braking
-            const angVel = quaternion.current;
-            api.angularVelocity.set(0, velocity.current[1] * 0.95, 0);
         }
 
-        // Dynamically adjust Top Speed - Limited to ~120-150 km/h
-        const baseTopSpeed = 33.5; // ~120 km/h
+        // Top Speed - Realistic speed limiting with smooth falloff
+        const baseTopSpeed = 40; // ~144 km/h
         const maxSpeed = baseTopSpeed * nitroMult;
         const currentSpeedSq = velocity.current[0] ** 2 + velocity.current[2] ** 2;
         if (currentSpeedSq > maxSpeed ** 2) {
+            // Smooth speed capping without harsh cutoff
             const ratio = maxSpeed / Math.sqrt(currentSpeedSq);
-            api.velocity.set(velocity.current[0] * ratio, velocity.current[1], velocity.current[2] * ratio);
+            const smoothRatio = THREE.MathUtils.lerp(1, ratio, 0.1);
+            api.velocity.set(
+                velocity.current[0] * smoothRatio,
+                velocity.current[1],
+                velocity.current[2] * smoothRatio
+            );
         }
 
-        // Smooth Camera Follow
+        // Smooth Camera Follow - Bruno Simon-style camera
         const q = new Quaternion(...quaternion.current);
-        const camOffset = new Vector3(0, 5, 12).applyQuaternion(q);
-        const targetPos = new Vector3(position.current[0] + camOffset.x, position.current[1] + camOffset.y, position.current[2] + camOffset.z);
-        camera.position.lerp(targetPos, 0.1);
-        camera.lookAt(position.current[0], position.current[1] + 1, position.current[2]);
+        const camOffset = new Vector3(0, 4, 10).applyQuaternion(q);
+        const targetPos = new Vector3(
+            position.current[0] + camOffset.x,
+            position.current[1] + camOffset.y,
+            position.current[2] + camOffset.z
+        );
+        // Smoother camera interpolation
+        camera.position.lerp(targetPos, 0.08);
 
-        // Speed FOV scaling - REDUCED effect for stability
+        // Smooth look-at target
+        const lookAtTarget = new Vector3(
+            position.current[0],
+            position.current[1] + 1,
+            position.current[2]
+        );
+        camera.lookAt(lookAtTarget);
+
+        // Speed FOV scaling - Subtle Bruno Simon-style effect
         const pCam = camera as THREE.PerspectiveCamera;
         if (pCam.isPerspectiveCamera) {
-            // Reduced multiplier from 1.2 to 0.4
-            pCam.fov = THREE.MathUtils.lerp(pCam.fov, 60 + (currentSpeed * 0.4), 0.1);
+            const targetFov = 60 + (currentSpeed * 0.3);
+            pCam.fov = THREE.MathUtils.lerp(pCam.fov, targetFov, 0.05);
             pCam.updateProjectionMatrix();
         }
     });

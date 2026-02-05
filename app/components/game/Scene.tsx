@@ -60,8 +60,24 @@ function World() {
                 <ToneMapping />
             </EffectComposer>
 
-            {/* Physics World - Using SAP broadphase for better performance */}
-            <Physics gravity={[0, -9.8, 0]} frictionGravity={null} broadphase="SAP">
+            {/* Physics World - Bruno Simon-style fixed timestep physics */}
+            <Physics
+                gravity={[0, -9.8, 0]}
+                iterations={10}
+                tolerance={0.001}
+                step={1 / 60}
+                maxSubSteps={5}
+                broadphase="SAP"
+                allowSleep={true}
+                defaultContactMaterial={{
+                    friction: 0.3,
+                    restitution: 0.3,
+                    contactEquationStiffness: 1e8,
+                    contactEquationRelaxation: 3,
+                    frictionEquationStiffness: 1e8,
+                    frictionEquationRelaxation: 3,
+                }}
+            >
                 <Car />
                 <Road />
             </Physics>
