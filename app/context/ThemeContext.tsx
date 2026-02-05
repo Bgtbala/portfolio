@@ -12,7 +12,7 @@ interface ThemeContextType {
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
-    const [theme, setThemeState] = useState<Theme>('future');
+    const [theme, setThemeState] = useState<Theme>('classic');
 
     const setTheme = (newTheme: Theme) => {
         setThemeState(newTheme);
@@ -25,7 +25,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
         if (savedTheme) {
             setTheme(savedTheme);
         } else {
-            setTheme('future');
+            setTheme('classic');
         }
     }, []);
 

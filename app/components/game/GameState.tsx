@@ -24,7 +24,7 @@ export const useGameStore = create<GameState>((set) => ({
     currentSection: 'Start',
     carPosition: [0, 0, 20],
 
-    setSpeed: (s) => set({ speed: Math.floor(s * 10) }),
+    setSpeed: (s) => set({ speed: s }),
     addDriftPoints: (p) => set((state) => ({ driftScore: state.driftScore + p })),
     setNitro: (active) => set({ nitroActive: active }),
     toggleDayNight: () => set((state) => ({ isNight: !state.isNight })),

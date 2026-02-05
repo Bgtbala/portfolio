@@ -56,7 +56,7 @@ function FutureHero() {
                             </div>
 
                             <p className="text-gray-400 text-xl font-light max-w-2xl leading-relaxed italic border-l-2 border-primary/30 pl-8">
-                                Architecting high-integrity systems.
+                                Building scalable web applications with MERN & Next.js. Architecting high-integrity systems with 1+ years of production experience.
                             </p>
 
                             <div className="flex flex-wrap gap-6 pt-8">
@@ -109,6 +109,19 @@ function FutureHero() {
                                         </div>
                                     </div>
                                 ))}
+
+                                {/* Additional Info Below Stats */}
+                                <div className="border-t border-primary/10 pt-6 space-y-4 mt-4">
+                                    {[
+                                        { label: "Location", val: "Bengaluru, India" },
+                                        { label: "Experience", val: "1+ Years" },
+                                    ].map((item, i) => (
+                                        <div key={i} className="flex justify-between items-center text-xs">
+                                            <span className="font-mono text-white/40 uppercase tracking-widest">{item.label}</span>
+                                            <span className="font-bold text-primary">{item.val}</span>
+                                        </div>
+                                    ))}
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -134,30 +147,32 @@ function ClassicHero() {
                         transition={{ duration: 1.2, ease: [0.16, 1, 0.3, 1] }}
                     >
                         {/* Small Job Title */}
-                        <span className="text-sm font-mono uppercase tracking-[0.4em] text-gray-400 mb-6 block">Full Stack Developer</span>
+                        <span className="text-xs md:text-sm font-mono uppercase tracking-[0.3em] md:tracking-[0.4em] text-gray-400 mb-4 md:mb-6 block">Full Stack Developer</span>
 
                         {/* Large Name - The Focus */}
-                        <h1 className="text-6xl md:text-[10vw] theme-title leading-[0.85] tracking-tighter mb-8">
+                        <h1 className="text-5xl md:text-[10vw] theme-title leading-[0.85] tracking-tighter mb-6 md:mb-8">
                             Balagangatharan <br />
                             <span className="italic font-light text-gray-300">M.</span>
                         </h1>
 
-                        <p className="text-xl text-gray-500 font-light leading-relaxed max-w-lg mb-10">
+                        <p className="text-base md:text-xl text-gray-500 font-light leading-relaxed max-w-lg mb-8 md:mb-10">
                             Building scalable web applications with MERN & Next.js. 1+ years of experience.
                         </p>
 
-                        <a href="#projects" className="group inline-flex items-center gap-8 border-t border-black pt-6 transition-all hover:opacity-50">
-                            <span className="text-lg theme-title italic tracking-tight">View Projects</span>
-                            <div className="w-12 h-12 rounded-full border border-gray-200 flex items-center justify-center group-hover:translate-x-2 transition-transform">
-                                <FiArrowRight size={20} />
-                            </div>
-                        </a>
-                        <Link href="/game" className="group inline-flex items-center gap-8 border-t border-black pt-6 transition-all hover:opacity-50 ml-8">
-                            <span className="text-lg theme-title italic tracking-tight">Play 3D 🕹️</span>
-                            <div className="w-12 h-12 rounded-full border border-gray-200 flex items-center justify-center group-hover:translate-x-2 transition-transform">
-                                <FiArrowRight size={20} />
-                            </div>
-                        </Link>
+                        <div className="flex flex-col sm:flex-row gap-4 sm:gap-0">
+                            <a href="#projects" className="group inline-flex items-center gap-4 sm:gap-8 border-t border-black pt-4 sm:pt-6 transition-all hover:opacity-50">
+                                <span className="text-base sm:text-lg theme-title italic tracking-tight">View Projects</span>
+                                <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full border border-gray-200 flex items-center justify-center group-hover:translate-x-2 transition-transform">
+                                    <FiArrowRight className="w-4 h-4 sm:w-5 sm:h-5" />
+                                </div>
+                            </a>
+                            <Link href="/game" className="group inline-flex items-center gap-4 sm:gap-8 border-t border-black pt-4 sm:pt-6 transition-all hover:opacity-50 sm:ml-8">
+                                <span className="text-base sm:text-lg theme-title italic tracking-tight">Play 3D 🕹️</span>
+                                <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full border border-gray-200 flex items-center justify-center group-hover:translate-x-2 transition-transform">
+                                    <FiArrowRight className="w-4 h-4 sm:w-5 sm:h-5" />
+                                </div>
+                            </Link>
+                        </div>
                     </motion.div>
                 </div>
 
@@ -225,8 +240,11 @@ function AnimatedHero() {
                         </h1>
 
                         <div className="bg-white border-[6px] border-black p-10 shadow-[20px_20px_0px_#000] max-w-2xl transform rotate-1">
-                            <p className="text-2xl md:text-4xl font-black text-black leading-none uppercase italic border-l-[12px] border-black pl-8 mb-10">
+                            <p className="text-2xl md:text-4xl font-black text-black leading-none uppercase italic border-l-[12px] border-black pl-8 mb-6">
                                 "Slaying bugs since 2024!"
+                            </p>
+                            <p className="text-base font-bold text-black mb-10 uppercase tracking-wide">
+                                MERN Stack • Next.js • 1+ Years • Bengaluru
                             </p>
                             <div className="flex flex-wrap gap-6">
                                 <a

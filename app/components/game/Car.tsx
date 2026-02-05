@@ -73,7 +73,7 @@ export default function Car() {
         mass: 500,
         position: [0, 0.95, 20],
         rotation: [0, 0, 0],
-        linearDamping: 0.0, // ZERO air resistance for buttery smoothness
+        linearDamping: 0.02, // Very low for ultra-smooth movement
         angularDamping: 0.9,
         allowSleep: false,
         fixedRotation: false,
@@ -114,14 +114,18 @@ export default function Car() {
         }
 
         // --- FORCES & ACCELERATION ---
-        const nitroMult = (nitro && forward || nitroActive) ? 1.8 : 1.0;
-        const driveForce = 120000 * nitroMult; // Increased base force
-        const turnTorque = 120000;
+        const nitroMult = (nitro && forward || nitroActive) ? 1.4 : 1.0;
+        const driveForce = 100000 * nitroMult; // Increased for smoother power delivery
+        const turnTorque = 50000; // Reduced for smoother, more gradual turning
 
-        // Update Game State - Throttled to 10fps for ultimate stability
+        // Update Game State - Smooth updates for HUD
         const currentSpeed = Math.sqrt(velocity.current[0] ** 2 + velocity.current[2] ** 2);
+        // Use 3.6 multiplier to convert m/s to km/h (standard)
+        const displaySpeed = Math.floor(currentSpeed * 3.6);
+
+        setSpeed(displaySpeed);
+
         if (state.clock.elapsedTime - lastUpdate.current > 0.1) {
-            setSpeed(currentSpeed);
             setCarPosition(position.current as [number, number, number]);
             if (nitroActive !== (nitro && forward) && !nitroActive) setNitro(nitro && forward);
             lastUpdate.current = state.clock.elapsedTime;
@@ -134,7 +138,7 @@ export default function Car() {
             const angle = Math.abs(vDir.dot(carDir));
 
             if (angle < 0.85) { // Sideways enough
-                driftAccumulator.current += delta * currentSpeed * 10;
+                driftAccumulator.current += delta * currentSpeed * 15;
                 if (driftAccumulator.current > 10) {
                     addDriftPoints(Math.floor(driftAccumulator.current));
                     driftAccumulator.current = 0;
@@ -144,9 +148,9 @@ export default function Car() {
             }
         }
 
-        // Custom Acceleration Ramp - INCREASED responsiveness
+        // Custom Acceleration Ramp - Fast and smooth for fluid movement
         const targetThrottle = forward ? 1 : backward ? -1 : 0;
-        throttle.current = THREE.MathUtils.lerp(throttle.current, targetThrottle, delta * 4.0);
+        throttle.current = THREE.MathUtils.lerp(throttle.current, targetThrottle, delta * 6.0); // Increased for smoother response
 
         if (forward || backward || left || right) {
             api.wakeUp();
@@ -160,30 +164,57 @@ export default function Car() {
             api.applyLocalForce([0, 0, -throttle.current * driveForce], [0, 0, 0]);
         }
 
-        // SMOOTH INTERPOLATED STEERING
+        // SMOOTH INTERPOLATED STEERING - Gradual for realistic feel
         const targetSteering = left ? 1 : right ? -1 : 0;
-        steering.current = THREE.MathUtils.lerp(steering.current, targetSteering, delta * 8);
+        const steeringSpeed = currentSpeed > 15 ? 2.5 : 4; // Much slower at high speeds
+        steering.current = THREE.MathUtils.lerp(steering.current, targetSteering, delta * steeringSpeed);
 
-        // Deadzone to ensure absolute zero when not pressing keys
+        // Deadzone
         if (Math.abs(steering.current) < 0.01) {
             steering.current = 0;
         }
 
         if (steering.current !== 0) {
-            api.applyTorque([0, steering.current * turnTorque, 0]);
+            // Apply torque for rotation - progressive scaling
+            const torqueMultiplier = currentSpeed > 25 ? 0.3 : currentSpeed > 15 ? 0.5 : 1.0;
+            api.applyTorque([0, steering.current * turnTorque * torqueMultiplier, 0]);
 
+            // Lateral grip - helps the car actually turn rather than just rotating
             const velocityZ = velocity.current[2];
-            const lateralForce = steering.current * Math.abs(velocityZ) * 5000;
-            api.applyLocalForce([-lateralForce, 0, 0], [0, 0, 0]);
+            const velocityX = velocity.current[0];
+
+            // Calculate a more realistic lateral force
+            const forwardDir = new THREE.Vector3(0, 0, -1).applyQuaternion(new THREE.Quaternion(...quaternion.current));
+            const lateralDir = new THREE.Vector3(1, 0, 0).applyQuaternion(new THREE.Quaternion(...quaternion.current));
+
+            const dotLateral = new THREE.Vector3(velocity.current[0], 0, velocity.current[2]).dot(lateralDir);
+
+            // Counter-act lateral velocity to simulate tire grip - reduced strength
+            if (Math.abs(dotLateral) > 0.1) {
+                api.applyLocalForce([-dotLateral * 3000, 0, 0], [0, 0, 0]); // Reduced from 5000
+            }
+
+            // Add extra push into the turn - reduced for less sharp turns
+            const turnPush = steering.current * currentSpeed * 800; // Reduced from 2000
+            api.applyLocalForce([-turnPush, 0, 0], [0, 0, 0]);
         }
 
-        // Brake
+        // Brake - Smooth application for better drift control
         if (brake) {
-            api.velocity.set(velocity.current[0] * 0.9, velocity.current[1], velocity.current[2] * 0.9);
+            const brakeStrength = 0.97; // Gentler for smoother drifts
+            api.velocity.set(
+                velocity.current[0] * brakeStrength,
+                velocity.current[1],
+                velocity.current[2] * brakeStrength
+            );
+            // Only dampen rotation slightly during braking
+            const angVel = quaternion.current;
+            api.angularVelocity.set(0, velocity.current[1] * 0.95, 0);
         }
 
-        // Dynamically adjust Top Speed
-        const maxSpeed = 23 * nitroMult;
+        // Dynamically adjust Top Speed - Limited to ~120-150 km/h
+        const baseTopSpeed = 33.5; // ~120 km/h
+        const maxSpeed = baseTopSpeed * nitroMult;
         const currentSpeedSq = velocity.current[0] ** 2 + velocity.current[2] ** 2;
         if (currentSpeedSq > maxSpeed ** 2) {
             const ratio = maxSpeed / Math.sqrt(currentSpeedSq);

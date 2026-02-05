@@ -45,25 +45,23 @@ function World() {
                     />
                     <fog attach="fog" args={['#87CEEB', 50, 250]} />
                     <Clouds material={THREE.MeshBasicMaterial}>
-                        <Cloud seed={10} bounds={[50, 2, 50]} volume={10} color="#f0f0f0" position={[0, -20, -50]} />
-                        <Cloud seed={11} bounds={[50, 2, 50]} volume={10} color="#ffffff" position={[100, -15, -100]} />
-                        <Cloud seed={12} bounds={[50, 2, 50]} volume={10} color="#e0e0e0" position={[-100, -25, -150]} />
-                        <Cloud seed={13} bounds={[50, 2, 50]} volume={10} color="#ffffff" position={[50, -10, 50]} />
+                        <Cloud seed={10} bounds={[50, 2, 50]} volume={5} color="#f0f0f0" position={[0, -20, -100]} />
+                        <Cloud seed={11} bounds={[50, 2, 50]} volume={5} color="#ffffff" position={[100, -15, -200]} />
                     </Clouds>
                     <ambientLight intensity={0.8} />
-                    <directionalLight position={[50, 50, 25]} intensity={2} castShadow shadow-mapSize={[2048, 2048]} />
+                    <directionalLight position={[50, 50, 25]} intensity={2} castShadow shadow-mapSize={[1024, 1024]} />
                     <Environment preset="city" />
                 </>
             )}
 
-            {/* Post Processing */}
+            {/* Post Processing - Slightly optimized Bloom */}
             <EffectComposer enableNormalPass={false}>
-                <Bloom luminanceThreshold={1.2} intensity={0.8} levels={9} mipmapBlur />
+                <Bloom luminanceThreshold={1.2} intensity={0.5} levels={7} mipmapBlur={false} />
                 <ToneMapping />
             </EffectComposer>
 
-            {/* Physics World */}
-            <Physics gravity={[0, -9.8, 0]} frictionGravity={null}>
+            {/* Physics World - Using SAP broadphase for better performance */}
+            <Physics gravity={[0, -9.8, 0]} frictionGravity={null} broadphase="SAP">
                 <Car />
                 <Road />
             </Physics>

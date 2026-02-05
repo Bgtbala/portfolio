@@ -149,7 +149,7 @@ const RoadSegment = ({ position, rotation, type, feature, length, description, i
                 {feature === 'education' && (
                     <Building
                         label="EDUCATION"
-                        description={`ACADEMIC FOUNDATION\n\nBachelor of Engineering (ECE)\nSaranathan College of Engineering\nCGPA: 8.13 | 2019 - 2023\nTechnical Merit Scholarship Recipient`}
+                        description={`ACADEMIC FOUNDATION\n\nBachelor of Engineering\nSaranathan College of Engineering\nCGPA: 8.13 | 2019 - 2023`}
                         color="#8b5cf6"
                         position={[-(ROAD_WIDTH / 2 + 12), 0, 0]}
                         rotation={[0, Math.PI / 2, 0]}
@@ -264,7 +264,7 @@ export default function Road() {
             type: 'straight',
             feature: 'education',
             length: 20,
-            description: "ACADEMIC FOUNDATION\n\nBachelor of Engineering (ECE)\nSaranathan College of Engineering\nCGPA: 8.13 | 2019 - 2023\nTechnical Merit Scholarship Recipient"
+            description: "ACADEMIC FOUNDATION\n\nBachelor of Engineering\nSaranathan College of Engineering\nCGPA: 8.13 | 2019 - 2023"
         });
         segments.push({ position: [0, -0.1, -60], rotation: [0, 0, 0], type: 'intersection', feature: 'none', length: 20 });
         segments.push({
