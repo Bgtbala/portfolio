@@ -123,5 +123,3 @@ This project is open source and available for personal use.
 - Location: Bengaluru, India
 
 ---
-
-Built with ❤️ using Next.js and TailwindCSS
