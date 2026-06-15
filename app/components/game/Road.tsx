@@ -28,9 +28,15 @@ const Building = ({ label, description, color, position, rotation, width = 16 }:
     useFrame((state) => {
         if (meshRef.current) {
             const pulse = Math.sin(state.clock.elapsedTime * 0.8) * 0.1 + 1;
-            meshRef.current.children.forEach((child, i) => {
-                if (child.userData.isHologram) {
-                    (child as THREE.Mesh).material.opacity = 0.3 + pulse * 0.1;
+            meshRef.current.children.forEach((child) => {
+                if (child.userData.isHologram && child instanceof THREE.Mesh) {
+                    const opacity = 0.3 + pulse * 0.1;
+                    const { material } = child;
+                    if (Array.isArray(material)) {
+                        material.forEach((m) => { m.opacity = opacity; });
+                    } else {
+                        material.opacity = opacity;
+                    }
                 }
             });
         }

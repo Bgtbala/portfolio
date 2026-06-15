@@ -65,7 +65,7 @@ function World() {
                 gravity={[0, -9.8, 0]}
                 iterations={10}
                 tolerance={0.001}
-                step={1 / 60}
+                stepSize={1 / 60}
                 maxSubSteps={5}
                 broadphase="SAP"
                 allowSleep={true}
