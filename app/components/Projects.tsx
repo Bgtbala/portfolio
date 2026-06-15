@@ -1,47 +1,10 @@
 'use client';
 
+import Link from 'next/link';
 import { motion, useMotionValue, useSpring, useTransform } from 'framer-motion';
-import { FiExternalLink, FiTerminal, FiLayers, FiMaximize2, FiGithub } from 'react-icons/fi';
+import { FiArrowRight, FiTerminal, FiMaximize2 } from 'react-icons/fi';
 import { useTheme } from '../context/ThemeContext';
-
-const projects = [
-    {
-        id: "P_01",
-        title: 'Filmox',
-        category: 'Social Platform',
-        description: 'MERN-based platform for personalized content and contests with real-time chat using WebSockets. Redis caching improved feed loading by ~40%.',
-        stack: ['MERN', 'Socket.io', 'Redis', 'AWS'],
-        achievement: '40% faster feeds',
-        color: '#7000ff'
-    },
-    {
-        id: "P_02",
-        title: 'Vaidyog',
-        category: 'Healthcare Portal',
-        description: 'Healthcare job platform with secure role-based authentication. MongoDB aggregations reduced API latency by 47%.',
-        stack: ['MERN', 'MongoDB Aggregation', 'AWS'],
-        achievement: '47% reduced latency',
-        color: '#4400ff'
-    },
-    {
-        id: "P_03",
-        title: 'GOG Eco',
-        category: 'Sustainability Platform',
-        description: 'Domain-based initiative platform with role-specific interfaces for Admin, Franchise, and Users. Green Coin reward system.',
-        stack: ['Next.js', 'API Integration', 'Role-Based UI', 'AWS'],
-        achievement: 'Green Coin rewards',
-        color: '#00ff88'
-    },
-    {
-        id: "P_04",
-        title: 'Samurai',
-        category: 'Manufacturing System',
-        description: 'Manufacturing workflow system connecting order processing, job tracking, and inventory. Reduced system errors by ~60%.',
-        stack: ['MERN', 'WebSockets', 'Inventory Automation', 'AWS'],
-        achievement: '60% fewer errors',
-        color: '#ff8800'
-    }
-];
+import { projects, type Project } from '../data/projects';
 
 // Animation variants
 const fadeInUp = {
@@ -75,7 +38,51 @@ export default function Projects() {
 }
 
 // --- Future Theme Layout ---
-function FutureProjectCard({ project, index }: { project: any, index: number }) {
+function ProjectDetailLink({ project, variant = 'future' }: { project: Project; variant?: 'future' | 'classic' | 'animated' }) {
+    if (!project.detailRoute) return null;
+
+    const styles = {
+        future: 'inline-flex items-center gap-2 px-4 py-2 border border-[#00cc66]/40 text-[#00cc66] font-mono text-[9px] uppercase tracking-widest hover:bg-[#00cc66]/10 transition-all',
+        classic: 'inline-flex items-center gap-2 text-sm font-mono uppercase tracking-widest text-black border-b border-black pb-1 hover:opacity-60 transition-opacity',
+        animated: 'inline-flex items-center gap-2 bg-[#00cc66] text-black px-4 py-2 font-black text-xs uppercase border-2 border-black hover:bg-yellow-400 transition-colors',
+    };
+
+    return (
+        <Link href={project.detailRoute} className={`${styles[variant]} interactive`}>
+            View Case Study {variant === 'future' ? <FiMaximize2 size={12} /> : <FiArrowRight size={14} />}
+        </Link>
+    );
+}
+
+function ProjectMetrics({ metrics, variant }: { metrics?: Project['metrics']; variant: 'future' | 'classic' }) {
+    if (!metrics?.length) return null;
+
+    if (variant === 'future') {
+        return (
+            <div className="flex flex-wrap gap-6 mb-6 pb-6 border-b border-white/5">
+                {metrics.map((m) => (
+                    <div key={m.label}>
+                        <div className="text-lg font-black text-white">{m.value}</div>
+                        <div className="font-mono text-[8px] text-gray-600 uppercase tracking-widest">{m.label}</div>
+                    </div>
+                ))}
+            </div>
+        );
+    }
+
+    return (
+        <div className="flex flex-wrap gap-8 mt-8 pt-8 border-t border-gray-100">
+            {metrics.map((m) => (
+                <div key={m.label}>
+                    <div className="text-2xl font-black theme-title text-black">{m.value}</div>
+                    <div className="text-[10px] font-mono uppercase tracking-widest text-gray-300 mt-1">{m.label}</div>
+                </div>
+            ))}
+        </div>
+    );
+}
+
+function FutureProjectCard({ project, index }: { project: Project; index: number }) {
     const x = useMotionValue(0);
     const y = useMotionValue(0);
     const mouseXSpring = useSpring(x, { damping: 50, stiffness: 400 });
@@ -98,15 +105,22 @@ function FutureProjectCard({ project, index }: { project: any, index: number }) 
             onMouseMove={handleMouseMove}
             onMouseLeave={() => { x.set(0); y.set(0); }}
             style={{ rotateX, rotateY, transformStyle: "preserve-3d" }}
-            className="group relative h-[500px] w-full glass hud-border p-1 overflow-hidden"
+            className="group relative h-[500px] w-full glass hud-border p-1 overflow-hidden cursor-pointer"
         >
-            <div className="relative h-full w-full bg-[#020202] p-10 flex flex-col justify-between z-10">
+            {project.detailRoute && (
+                <Link
+                    href={project.detailRoute}
+                    className="absolute inset-0 z-20 interactive"
+                    aria-label={`View ${project.title} case study`}
+                />
+            )}
+            <div className="relative h-full w-full bg-[#020202] p-10 flex flex-col justify-between z-10 pointer-events-none">
                 <div className="flex justify-between items-start font-mono text-[9px] text-primary/30 tracking-widest">
                     <span className="flex items-center gap-2"><div className="w-1 h-1 bg-primary animate-pulse" /> {project.id}</span>
                     <span className="text-primary">{project.achievement}</span>
                 </div>
 
-                <div style={{ transform: "translateZ(60px)" }} className="mt-8">
+                <div className="mt-8">
                     <div className="flex items-center gap-4 mb-4 text-primary">
                         <FiTerminal size={14} />
                         <span className="text-xs font-mono uppercase tracking-[0.3em] opacity-60">{project.category}</span>
@@ -118,13 +132,13 @@ function FutureProjectCard({ project, index }: { project: any, index: number }) 
                         {project.description}
                     </p>
                     <motion.div
-                        className="flex flex-wrap gap-2"
+                        className="flex flex-wrap gap-2 mb-6"
                         initial="hidden"
                         whileInView="visible"
                         viewport={{ once: true }}
                         variants={staggerContainer}
                     >
-                        {project.stack.map((t: string, i: number) => (
+                        {project.stack.map((t: string) => (
                             <motion.span
                                 key={t}
                                 variants={staggerItem}
@@ -134,17 +148,18 @@ function FutureProjectCard({ project, index }: { project: any, index: number }) 
                             </motion.span>
                         ))}
                     </motion.div>
+                    <ProjectMetrics metrics={project.metrics} variant="future" />
                 </div>
 
                 <div className="flex items-center justify-between border-t border-white/5 pt-6">
-                    <div className="flex gap-3">
-                        <div className="w-10 h-10 border border-white/10 flex items-center justify-center text-white/20 hover:text-primary hover:border-primary transition-all cursor-pointer">
-                            <FiGithub size={16} />
-                        </div>
-                    </div>
+                    {project.detailRoute ? (
+                        <span className="inline-flex items-center gap-2 px-4 py-2 border border-[#00cc66]/40 text-[#00cc66] font-mono text-[9px] uppercase tracking-widest group-hover:bg-[#00cc66]/10 transition-all">
+                            View Case Study <FiMaximize2 size={12} />
+                        </span>
+                    ) : null}
                 </div>
             </div>
-            <div className="absolute -top-32 -right-32 w-64 h-64 blur-[100px] opacity-10 group-hover:opacity-30 transition-opacity" style={{ backgroundColor: project.color }} />
+            <div className="absolute -top-32 -right-32 w-64 h-64 blur-[100px] opacity-10 group-hover:opacity-30 transition-opacity pointer-events-none" style={{ backgroundColor: project.color }} />
         </motion.div>
     );
 }
@@ -163,7 +178,7 @@ function FutureProjects() {
                     <h2 className="text-4xl md:text-8xl font-black uppercase theme-title text-white tracking-tighter">PROJECTS</h2>
                 </motion.div>
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
-                    {projects.map((p, i) => <FutureProjectCard key={i} project={p} index={i} />)}
+                    {projects.map((p, i) => <FutureProjectCard key={p.id} project={p} index={i} />)}
                 </div>
             </div>
         </section>
@@ -188,13 +203,13 @@ function ClassicProjects() {
                 <motion.div
                     className="space-y-16"
                     variants={staggerContainer}
-                    initial="hidden"
+                    initial={false}
                     whileInView="visible"
                     viewport={{ once: true, margin: "-50px" }}
                 >
                     {projects.map((p, i) => (
                         <motion.div
-                            key={i}
+                            key={p.id}
                             variants={staggerItem}
                             className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-start pb-16 border-b border-gray-100 last:border-b-0"
                         >
@@ -210,6 +225,12 @@ function ClassicProjects() {
                                 <p className="text-gray-500 font-light text-lg leading-relaxed">
                                     {p.description}
                                 </p>
+                                <ProjectMetrics metrics={p.metrics} variant="classic" />
+                                {p.detailRoute && (
+                                    <div className="mt-8">
+                                        <ProjectDetailLink project={p} variant="classic" />
+                                    </div>
+                                )}
                             </div>
 
                             <div className="lg:col-span-6 space-y-8">
@@ -276,7 +297,7 @@ function AnimatedProjects() {
                 >
                     {projects.map((p, i) => (
                         <motion.div
-                            key={i}
+                            key={p.id}
                             variants={{
                                 hidden: { opacity: 0, y: 50, rotate: i % 2 === 0 ? -5 : 5 },
                                 visible: {
@@ -319,13 +340,16 @@ function AnimatedProjects() {
                             </motion.div>
 
                             <motion.div
-                                className="mt-auto bg-yellow-400 border-4 border-black p-4 font-black text-center uppercase"
+                                className="mt-auto space-y-4"
                                 initial={{ scale: 0 }}
                                 whileInView={{ scale: 1 }}
                                 viewport={{ once: true }}
                                 transition={{ type: "spring", stiffness: 200, delay: 0.3 }}
                             >
-                                🏆 {p.achievement}
+                                <div className="bg-yellow-400 border-4 border-black p-4 font-black text-center uppercase">
+                                    🏆 {p.achievement}
+                                </div>
+                                {p.detailRoute && <ProjectDetailLink project={p} variant="animated" />}
                             </motion.div>
                         </motion.div>
                     ))}

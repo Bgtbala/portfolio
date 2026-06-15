@@ -1,10 +1,12 @@
 import type { Metadata } from "next";
+import Script from "next/script";
 import "./globals.css";
 import CustomCursor from "./components/CustomCursor";
 import { ThemeProvider } from "./context/ThemeContext";
 import Preloader from "./components/Preloader";
 import ScrollProgress from "./components/ScrollProgress";
 import FloatingActions from "./components/FloatingActions";
+import PortfolioChatbot from "./components/PortfolioChatbot";
 import ParticleBackground from "./components/ParticleBackground";
 import SmoothScroll from "./components/SmoothScroll";
 
@@ -33,12 +35,14 @@ export default function RootLayout({
         <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@100..900&family=Playfair+Display:wght@400..900&family=Bangers&family=JetBrains+Mono:wght@100..800&display=swap" rel="stylesheet" />
       </head>
       <body className="antialiased overflow-x-hidden transition-colors duration-500">
+        <Script src="/theme-init.js" strategy="beforeInteractive" />
         <ThemeProvider>
           <Preloader />
           <ScrollProgress />
           <ParticleBackground />
           <CustomCursor />
           <FloatingActions />
+          <PortfolioChatbot />
           <SmoothScroll>
             {children}
           </SmoothScroll>

@@ -1,8 +1,14 @@
-import type { NextConfig } from "next";
+import type { NextConfig } from 'next';
+import path from 'path';
 
-/** @type {import('next').NextConfig} */
-const nextConfig = {
-  /* config options here */
+const nextConfig: NextConfig = {
+    // Pin workspace root so Turbopack doesn't scan the parent user folder
+    turbopack: {
+        root: path.resolve(__dirname),
+    },
+    logging: {
+        incomingRequests: false,
+    },
 };
 
-module.exports = nextConfig;
+export default nextConfig;

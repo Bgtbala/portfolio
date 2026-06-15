@@ -24,8 +24,8 @@ export default function FloatingActions() {
         window.scrollTo({ top: 0, behavior: 'smooth' });
     };
 
-    // Hide on game page
-    if (pathname === '/game') return null;
+    // Hide on game and project detail pages
+    if (pathname === '/game' || pathname.startsWith('/projects/')) return null;
 
     const isClassic = theme === 'classic';
     const isAnimated = theme === 'animated';
@@ -33,7 +33,7 @@ export default function FloatingActions() {
     const resumeLink = "https://drive.google.com/file/d/1BtRKRVdik1QobaDPs_qz7lszKVY3CuGv/view";
 
     return (
-        <div className="fixed bottom-8 right-8 z-[150] flex flex-col gap-4">
+        <div className="fixed bottom-6 right-[5.25rem] sm:bottom-8 sm:right-[5.75rem] z-[150] flex flex-col gap-3 items-center">
             {/* Download Resume Button */}
             <motion.a
                 href={resumeLink}

@@ -2,6 +2,7 @@
 
 import { motion, AnimatePresence } from 'framer-motion';
 import { useState, useEffect } from 'react';
+import { usePathname } from 'next/navigation';
 import { useTheme } from '../context/ThemeContext';
 import { FiMonitor, FiType, FiZap, FiMenu, FiX } from 'react-icons/fi';
 import { useSoundEffects } from './SoundEffects';
@@ -14,6 +15,10 @@ const navItems = [
 ];
 
 export default function Navbar() {
+    const pathname = usePathname();
+    const isHome = pathname === '/';
+    const linkTo = (hash: string) => (isHome ? hash : `/${hash}`);
+
     const { theme, setTheme } = useTheme();
     const { playClick, playHover } = useSoundEffects(); // Use the hook
     const [isScrolled, setIsScrolled] = useState(false);
@@ -68,7 +73,7 @@ export default function Navbar() {
             <div className="max-w-7xl mx-auto px-6 flex justify-between items-center">
                 {/* Brand */}
                 <a
-                    href="#home"
+                    href={linkTo('#home')}
                     className={`text-2xl font-black theme-title transition-colors duration-500 ${getTextColor()}`}
                     onMouseEnter={playHover}
                 >
@@ -80,7 +85,7 @@ export default function Navbar() {
                     {navItems.map((item) => (
                         <a
                             key={item.href}
-                            href={item.href}
+                            href={linkTo(item.href)}
                             onMouseEnter={playHover}
                             className={`text-[11px] font-mono font-bold tracking-[0.15em] transition-colors uppercase ${getNavLinkColor()}`}
                         >
@@ -176,7 +181,7 @@ export default function Navbar() {
                         {navItems.map((item) => (
                             <a
                                 key={item.href}
-                                href={item.href}
+                                href={linkTo(item.href)}
                                 onClick={() => setIsMenuOpen(false)}
                                 className="text-xl font-black theme-title tracking-tighter uppercase"
                             >
